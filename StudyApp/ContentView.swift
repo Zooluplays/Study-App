@@ -8,6 +8,8 @@ import CoreData
 import AVFoundation
 import UniformTypeIdentifiers
 
+import MCEmojiPicker
+
 // MARK: - Flash Audio Manager
 class FlashAudioManager {
     static let shared = FlashAudioManager()
@@ -366,28 +368,63 @@ struct CreateDeckView: View {
     @State private var navigateToDeck = false
     @State private var createdDeck: Deck?
     
-    private let commonEmojis = ["📚", "🧠", "💡", "🎓", "📖", "✏️", "🔬", "🎨", "🌍", "💻", "🎵", "⚽️"]
+    @State private var isPickerPresented = false
+    
+    private let commonEmojis = ["📚", "🧠", "💡", "🎓", "📖", "✏️", "🎨", "🌍", "💻", "🎵", "⚽️"]
     
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
                 VStack(spacing: 16) {
-                    Text("Create New Deck")
-                        .font(.title2)
-                        .fontWeight(.semibold)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Deck Name")
-                            .font(.headline)
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
                         TextField("Enter deck name", text: $deckName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .textFieldStyle(.plain)
+                            .padding()
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .cornerRadius(15)
                     }
                     
+                    
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Choose an Emoji")
-                            .font(.headline)
+                        Text("Icon")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal)
                         
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
+                            Button(action: {
+                                isPickerPresented.toggle()
+                            }) {
+                                Group {
+                                    if commonEmojis.contains(selectedEmoji) {
+                                        // Show plus icon when a preset emoji is selected
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                    } else {
+                                        // Show the custom selected emoji
+                                        Text(selectedEmoji)
+                                            .font(.system(size: 30))
+                                    }
+                                }
+                                .frame(width: 50, height: 50)
+                                .background(Color.secondary.opacity(0.15))
+                                .clipShape(Circle())
+                                .overlay(
+                                    // Show border when custom emoji is selected
+                                    Circle()
+                                        .stroke(Color.blue, lineWidth: 2)
+                                        .scaleEffect(1.1)
+                                        .opacity(commonEmojis.contains(selectedEmoji) ? 0 : 1)
+                                )
+                            }
+                            .emojiPicker(isPresented: $isPickerPresented, selectedEmoji: $selectedEmoji)
+                            
                             ForEach(commonEmojis, id: \.self) { emoji in
                                 Button(action: {
                                     selectedEmoji = emoji
@@ -395,25 +432,29 @@ struct CreateDeckView: View {
                                     Text(emoji)
                                         .font(.system(size: 30))
                                         .frame(width: 50, height: 50)
-                                        .background(selectedEmoji == emoji ? Color.blue.opacity(0.2) : Color.clear)
+                                        .background(selectedEmoji == emoji ? Color.blue.opacity(0.3) : Color.secondary.opacity(0.15))
                                         .cornerRadius(8)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.blue, lineWidth: 2)
+                                                .scaleEffect(1.1)
+                                                .opacity(selectedEmoji == emoji ? 1 : 0)
+                                        )
                                 }
                             }
                         }
-                        
-                        HStack {
-                            Text("Or enter custom:")
-                            TextField("🎯", text: $selectedEmoji)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 60)
-                        }
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(15)
                     }
                 }
                 .padding()
                 
                 Spacer()
             }
-            .navigationTitle("New Deck")
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Create New Deck")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -754,41 +795,65 @@ struct CreateFlashcardView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Front Side")
-                            .font(.headline)
-                        
-                        VStack(spacing: 8) {
-                            TextField("Enter front text 1", text: $frontText1)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            TextField("Enter front text 2 (optional)", text: $frontText2)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Front Side")
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+                            VStack(spacing: 8) {
+                                TextField("Front text", text: $frontText1)
+                                    .textFieldStyle(.plain)
+                                    .padding()
+                                Divider()
+                                    .padding(.leading)
+                                TextField("Front secondary text", text: $frontText2)
+                                    .textFieldStyle(.plain)
+                                    .padding()
+                            }
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .cornerRadius(15)
                         }
                         
-                        UserDefaultsAudioView(
-                            title: "Front Audio",
-                            flashcardID: flashcardID,
-                            side: "front"
-                        )
+                        VStack {
+                            UserDefaultsAudioView(
+                                title: "Audio",
+                                flashcardID: flashcardID,
+                                side: "front"
+                            )
+                        }
+                        .padding(.horizontal)
                     }
                     
                     Divider()
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Back Side")
-                            .font(.headline)
-                        
-                        VStack(spacing: 8) {
-                            TextField("Enter back text 1", text: $backText1)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            TextField("Enter back text 2 (optional)", text: $backText2)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Back Side")
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+                            VStack(spacing: 8) {
+                                TextField("Back text", text: $backText1)
+                                    .textFieldStyle(.plain)
+                                    .padding()
+                                Divider()
+                                    .padding(.leading)
+                                TextField("Back secondary text", text: $backText2)
+                                    .textFieldStyle(.plain)
+                                    .padding()
+                            }
+                            .background(Color(.secondarySystemGroupedBackground))
+                            .cornerRadius(15)
                         }
                         
-                        UserDefaultsAudioView(
-                            title: "Back Audio",
-                            flashcardID: flashcardID,
-                            side: "back"
-                        )
+                        VStack {
+                            UserDefaultsAudioView(
+                                title: "Audio",
+                                flashcardID: flashcardID,
+                                side: "back"
+                            )
+                        }
+                        .padding(.horizontal)
                     }
                 }
                 .padding()
@@ -808,7 +873,7 @@ struct CreateFlashcardView: View {
                         saveFlashcard()
                     }
                     .disabled(frontText1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                             backText1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                              backText1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
@@ -851,7 +916,7 @@ struct UserDefaultsAudioView: View {
     @State private var audioDelegate: AudioPlayerDelegate?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 8) {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -866,12 +931,14 @@ struct UserDefaultsAudioView: View {
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                            .foregroundColor(isRecording ? .red : .blue)
+                            .foregroundColor(isRecording ? .red : .white)
                         Text(isRecording ? "Stop" : "Record")
                             .font(.caption)
+                            .fixedSize()
                     }
                 }
-                .buttonStyle(BorderedButtonStyle())
+                .buttonStyle(.borderedProminent)
+                .clipShape(.capsule)
                 
                 Button(action: {
                     showingAudioPicker = true
@@ -881,9 +948,11 @@ struct UserDefaultsAudioView: View {
                             .foregroundColor(.blue)
                         Text("Import")
                             .font(.caption)
+                            .fixedSize()
                     }
                 }
-                .buttonStyle(BorderedButtonStyle())
+                .buttonStyle(.bordered)
+                .clipShape(.capsule)
                 
                 if hasAudio {
                     Button(action: {
@@ -1022,7 +1091,7 @@ struct UserDefaultsAudioView: View {
                 let player = try AVAudioPlayer(contentsOf: audioURL)
                 player.prepareToPlay()
                 
-                                    // Switch to main thread for UI updates and playback
+                // Switch to main thread for UI updates and playback
                 DispatchQueue.main.async {
                     self.audioPlayer = player
                     
